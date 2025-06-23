@@ -5,18 +5,12 @@ import sqlite3
 from pathlib import Path
 
 app = FastAPI()
-
 templates = Jinja2Templates(directory="templates")
-
-## Database setup
-# SQLite database file
 db_file = Path(__file__).parent / "data" / "users.db"
-
 
 
 @app.get("/api/users")
 async def get_users():
-    # Fetch all users from SQLite database
     conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()

@@ -10,32 +10,137 @@
   <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
     <div class="p-8">
       <h1 class="text-2xl font-bold mb-4">User List</h1>
+      <div class="mb-4 flex justify-between items-center">
+        <input type="text" id="search" placeholder="Search users..." class="flex-1 p-2 border border-gray-300 rounded" />
+        <button id="open-modal" class="ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Add User</button>
+      </div>
       <ul id="users-list" class="divide-y divide-gray-200">
         <li class="py-4 text-center text-gray-500">Loading...</li>
       </ul>
+      <!-- Pagination Controls -->
+      <div class="flex justify-between items-center mt-4">
+        <button id="prev-page" class="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50" disabled>Previous</button>
+        <span id="page-info" class="text-sm text-gray-600">Page 1</span>
+        <button id="next-page" class="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50">Next</button>
+      </div>
+      <!-- User list displayed above; form is in modal -->
+    </div>
+  </div>
+  <!-- Modal Dialog for New User -->
+  <div id="user-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Add New User</h2>
+        <button id="close-modal" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <form id="user-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">First Name</label>
+          <input type="text" id="first-name" name="first_name" required class="mt-1 block w-full p-2 border border-gray-300 rounded" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Last Name</label>
+          <input type="text" id="last-name" name="last_name" required class="mt-1 block w-full p-2 border border-gray-300 rounded" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <input type="email" id="email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded" />
+        </div>
+        <div class="flex justify-end">
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Submit</button>
+        </div>
+      </form>
     </div>
   </div>
   <script>
-    async function fetchUsers() {
+    // Frontend pagination, search, and user creation stubs
+
+    let searchTerm = '';
+    let currentPage = 1;
+    const pageSize = 10;
+
+    function renderUsers(list) {
+      const ul = document.getElementById('users-list');
+      ul.innerHTML = '';
+      if (list.length === 0) {
+        ul.innerHTML = '<li class="py-4 text-center text-gray-500">No users found.</li>';
+        return;
+      }
+      list.forEach(u => {
+        const li = document.createElement('li');
+        li.className = 'py-4 flex items-center justify-between';
+        li.innerHTML = `<div>
+            <p class="text-lg font-medium">${u.first_name} ${u.last_name}</p>
+            <p class="text-sm text-gray-500">${u.email}</p>
+          </div>`;
+        ul.appendChild(li);
+      });
+    }
+
+    async function fetchUsers(page = 1) {
+      currentPage = page;
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('page_size', pageSize);
+      if (searchTerm) params.append('search', searchTerm);
+      const url = '/api/users?' + params.toString();
       try {
-        const resp = await fetch('/api/users');
-        const users = await resp.json();
-        const ul = document.getElementById('users-list');
-        ul.innerHTML = '';
-        users.forEach(u => {
-          const li = document.createElement('li');
-          li.className = 'py-4 flex items-center justify-between';
-          li.innerHTML = `<div>
-              <p class="text-lg font-medium">${u.first_name} ${u.last_name}</p>
-              <p class="text-sm text-gray-500">${u.email}</p>
-            </div>`;
-          ul.appendChild(li);
-        });
-      } catch (error) {
-        console.error('Error fetching users:', error);
+        const resp = await fetch(url);
+        const list = await resp.json();
+        renderUsers(list);
+        document.getElementById('page-info').textContent = `Page ${currentPage}`;
+        document.getElementById('prev-page').disabled = currentPage <= 1;
+        document.getElementById('next-page').disabled = list.length < pageSize;
+      } catch (err) {
+        console.error('Error fetching users:', err);
       }
     }
-    fetchUsers();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchUsers();
+
+      document.getElementById('search').addEventListener('input', e => {
+        searchTerm = e.target.value.trim();
+        currentPage = 1;
+        fetchUsers(currentPage);
+      });
+
+      document.getElementById('prev-page').addEventListener('click', () => {
+        if (currentPage > 1) fetchUsers(currentPage - 1);
+      });
+      document.getElementById('next-page').addEventListener('click', () => {
+        fetchUsers(currentPage + 1);
+      });
+
+      // Modal open/close
+      const modal = document.getElementById('user-modal');
+      document.getElementById('open-modal').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+      });
+      document.getElementById('close-modal').addEventListener('click', () => {
+        modal.classList.add('hidden');
+      });
+
+      document.getElementById('user-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const firstName = document.getElementById('first-name').value.trim();
+        const lastName = document.getElementById('last-name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        if (!firstName || !lastName || !email) return;
+        try {
+          await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ first_name: firstName, last_name: lastName, email })
+          });
+          document.getElementById('user-form').reset();
+          modal.classList.add('hidden');
+          fetchUsers(currentPage);
+        } catch (err) {
+          console.error('Error creating user:', err);
+        }
+      });
+    });
   </script>
 </body>
 </html>

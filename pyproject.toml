@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]",
+    "jinja2",
+    "httpx",
+    "pytest>=8.4.1",
 ]
 
 [project.scripts]

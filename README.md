@@ -30,9 +30,9 @@ A simple FastAPI project that lists users with a styled front-end using Tailwind
 
 After syncing dependencies, initialize the SQLite database and populate it with users:
 ```bash
-python init_db.py
+uv run init_db.py
 ```
-This creates `data/users.db` and imports entries from `data/users.json`.
+This creates `data/users.db` (ignored by git) and imports entries from `data/users.json`.
 
 
 ## Running the Server
