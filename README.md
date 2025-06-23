@@ -46,7 +46,15 @@ Open your browser at http://127.0.0.1:8000 to view the user list.
 
 ## API
 
-- GET /api/users: Returns the list of users in JSON format.
+  - GET /api/users: Returns the list of users in JSON format.
+
+## Testing
+
+To run the test suite against the API endpoints:
+```bash
+uv sync    # ensures pytest and dependencies are installed
+uv run pytest
+```
 
 ## Data
 
