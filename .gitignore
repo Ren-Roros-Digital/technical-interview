@@ -41,3 +41,5 @@ __pypackages__/
 
 # uv lock files
 *.lock
+# SQLite database
+*.db

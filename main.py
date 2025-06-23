@@ -1,21 +1,30 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import sqlite3
+from pathlib import Path
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 
-users = [
-    {"id": 1, "name": "Alice", "email": "alice@example.com"},
-    {"id": 2, "name": "Bob", "email": "bob@example.com"},
-    {"id": 3, "name": "Charlie", "email": "charlie@example.com"},
-]
+## Database setup
+# SQLite database file
+db_file = Path(__file__).parent / "data" / "users.db"
+
 
 
 @app.get("/api/users")
 async def get_users():
-    return users
+    # Fetch all users from SQLite database
+    conn = sqlite3.connect(db_file)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT id, first_name, last_name, email FROM users ORDER BY id")
+    rows = cur.fetchall()
+    users_list = [dict(row) for row in rows]
+    conn.close()
+    return users_list
 
 
 @app.get("/", response_class=HTMLResponse)
